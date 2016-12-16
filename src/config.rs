@@ -12,6 +12,7 @@ use error::FatalError;
 
 pub static SIGN_COMMIT: &'static str = "sign-commit";
 pub static UPLOAD_DOC: &'static str = "upload-doc";
+pub static UPLOAD_DOC_ONLY: &'static str = "upload-doc-only";
 pub static PUSH_REMOTE: &'static str = "push-remote";
 pub static DOC_BRANCH: &'static str = "doc-branch";
 pub static DISABLE_PUSH: &'static str = "disable-push";
@@ -61,6 +62,7 @@ pub fn get_release_config<'a>(config: &'a Table, key: &str) -> Option<&'a Value>
 pub fn verify_release_config(config: &Table) -> Option<Vec<&str>> {
     let valid_keys = vec![SIGN_COMMIT,
                           UPLOAD_DOC,
+                          UPLOAD_DOC_ONLY,
                           PUSH_REMOTE,
                           DOC_BRANCH,
                           DISABLE_PUSH,
