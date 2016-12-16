@@ -19,6 +19,26 @@ mod git;
 mod cargo;
 mod version;
 
+fn upload_docs(dry_run: bool, doc_commit_msg: &str, sign: bool, doc_branch: &str)
+               -> Result<i32, error::FatalError> {
+    println!("Building and exporting docs.");
+    try!(cargo::doc(dry_run));
+
+    let doc_path = "target/doc/";
+
+    try!(git::init(doc_path, dry_run));
+    try!(git::add_all(doc_path, dry_run));
+    try!(git::commit_all(doc_path, doc_commit_msg, sign, dry_run));
+    let default_remote = try!(git::origin_url());
+
+    let mut refspec = String::from("master:");
+    refspec.push_str(doc_branch);
+
+    try!(git::force_push(doc_path, default_remote.trim(), &refspec, dry_run));
+
+    Ok(0)
+}
+
 fn execute(args: &ArgMatches) -> Result<i32, error::FatalError> {
     let cargo_file = try!(config::parse_cargo_config());
 
@@ -41,18 +61,23 @@ fn execute(args: &ArgMatches) -> Result<i32, error::FatalError> {
                      config::get_release_config(&cargo_file, config::UPLOAD_DOC)
                          .and_then(|f| f.as_bool())
                          .unwrap_or(false);
-    let git_remote = args.value_of("push-remote")
-                         .or_else(|| {
-                             config::get_release_config(&cargo_file, config::PUSH_REMOTE)
-                                 .and_then(|f| f.as_str())
-                         })
-                         .unwrap_or("origin");
+    let upload_doc_only = args.occurrences_of("upload-doc-only") > 0 ||
+                          config::get_release_config(&cargo_file, config::UPLOAD_DOC_ONLY)
+                              .and_then(|f| f.as_bool())
+                              .unwrap_or(false);
     let doc_branch = args.value_of("doc-branch")
                          .or_else(|| {
                              config::get_release_config(&cargo_file, config::DOC_BRANCH)
                                  .and_then(|f| f.as_str())
                          })
                          .unwrap_or("gh-pages");
+    let git_remote = args.value_of("push-remote")
+                         .or_else(|| {
+                             config::get_release_config(&cargo_file, config::PUSH_REMOTE)
+                                 .and_then(|f| f.as_str())
+                         })
+                         .unwrap_or("origin");
+    
     let skip_push = args.occurrences_of("skip-push") > 0 ||
                     config::get_release_config(&cargo_file, config::DISABLE_PUSH)
                         .and_then(|f| f.as_bool())
@@ -81,6 +106,10 @@ fn execute(args: &ArgMatches) -> Result<i32, error::FatalError> {
     let doc_commit_msg = config::get_release_config(&cargo_file, config::DOC_COMMIT_MESSAGE)
                              .and_then(|f| f.as_str())
                              .unwrap_or("(cargo-release) generate docs");
+
+    if upload_doc_only {
+        return upload_docs(dry_run, doc_commit_msg, sign, doc_branch);
+    }
 
     // STEP 0: Check if working directory is clean
     if !try!(git::status()) {
@@ -120,23 +149,9 @@ fn execute(args: &ArgMatches) -> Result<i32, error::FatalError> {
 
     // STEP 4: upload doc
     if upload_doc {
-        println!("Building and exporting docs.");
-        try!(cargo::doc(dry_run));
-
-        let doc_path = "target/doc/";
-
-        try!(git::init(doc_path, dry_run));
-        try!(git::add_all(doc_path, dry_run));
-        try!(git::commit_all(doc_path, doc_commit_msg, sign, dry_run));
-        let default_remote = try!(git::origin_url());
-
-        let mut refspec = String::from("master:");
-        refspec.push_str(doc_branch);
-
-        try!(git::force_push(doc_path, default_remote.trim(), &refspec, dry_run));
+        try!(upload_docs(dry_run, doc_commit_msg, sign, doc_branch));
     }
-
-
+    
     // STEP 5: Tag
     let root = try!(git::top_level());
     let rel_path = try!(cmd::relative_path_for(&root));
@@ -188,6 +203,7 @@ static USAGE: &'static str = "-l, --level=[level] 'Release level: bumpping major
                              [sign]... --sign 'Sign git commit and tag'
                              [dry-run]... --dry-run 'Do not actually change anything.'
                              [upload-doc]... --upload-doc 'Upload rust document to gh-pages branch'
+                             [upload-doc-only]... --upload-doc-only 'Only perform upload of rust document to gh-pages branch'
                              --push-remote=[push-remote] 'Git remote to push'
                              [skip-push]... --skip-push 'Do not run git push in the last step'
                              --doc-branch=[doc-branch] 'Git branch to push documentation on'
