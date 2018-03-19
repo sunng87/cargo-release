@@ -115,6 +115,18 @@ fn execute(args: &ArgMatches) -> Result<i32, error::FatalError> {
             ),
             _ => None,
         });
+    let pre_publish_hook = config::get_release_config(&cargo_file, config::PRE_PUBLISH_HOOK)
+        .and_then(|h| match h {
+            &Value::String(ref s) => Some(vec![s.as_ref()]),
+            &Value::Array(ref a) => Some(
+                a.iter()
+                    .map(|v| v.as_str())
+                    .filter(|o| o.is_some())
+                    .map(|s| s.unwrap())
+                    .collect(),
+            ),
+            _ => None,
+        });
     let tag_msg = config::get_release_config(&cargo_file, config::TAG_MESSAGE)
         .and_then(|f| f.as_str())
         .unwrap_or("(cargo-release) {{prefix}} version {{version}}");
@@ -215,6 +227,26 @@ fn execute(args: &ArgMatches) -> Result<i32, error::FatalError> {
 
     // STEP 3: cargo publish
     if publish {
+        // pre-publish hook
+        if let Some(pre_pub_hook) = pre_publish_hook {
+            println!(
+                "{}",
+                Green.paint(format!("Calling pre-publish hook: {:?}", pre_pub_hook))
+            );
+            let envs = btreemap!{
+                "DRY_RUN" => if dry_run { "true" } else { "false" }
+            };
+            // we use dry_run environmental variable to run the script
+            // so here we set dry_run=false and always execute the command.
+            if !try!(cmd::call_with_env(pre_pub_hook, envs, false)) {
+                println!(
+                    "{}",
+                    Red.paint("Release aborted by non-zero return of pre-publish hook.")
+                );
+                return Ok(108);
+            }
+        }
+
         println!("{}", Green.paint("Running cargo publish"));
         if !try!(cargo::publish(dry_run)) {
             return Ok(103);
