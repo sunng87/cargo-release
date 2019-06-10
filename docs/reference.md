@@ -30,7 +30,7 @@ Configuration is read from the following (in precedence order)
 - Command line arguments
 - File specified via `--config PATH`
 - `$CRATE/release.toml`
-- `$CRATE/Cargo.toml` (`[metadata.release]` table)
+- `$CRATE/Cargo.toml` (`[package.metadata.release]` table)
 - `$WORKSPACE/release.toml`
 - `$HOME/.release.toml`
 
