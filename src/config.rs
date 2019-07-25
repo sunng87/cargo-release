@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 use crate::error::FatalError;
+use crate::version::BumpLevel;
 
 pub trait ConfigSource {
     fn sign_commit(&self) -> Option<bool> {
@@ -87,6 +88,10 @@ pub trait ConfigSource {
     fn dependent_version(&self) -> Option<DependentVersion> {
         None
     }
+
+    fn default_level(&self) -> Option<BumpLevel> {
+        None
+    }
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -113,6 +118,7 @@ pub struct Config {
     pub enable_features: Option<Vec<String>>,
     pub enable_all_features: Option<bool>,
     pub dependent_version: Option<DependentVersion>,
+    pub default_level: Option<BumpLevel>,
 }
 
 impl Config {
@@ -176,6 +182,9 @@ impl Config {
         }
         if let Some(dependent_version) = source.dependent_version() {
             self.dependent_version = Some(dependent_version);
+        }
+        if let Some(default_level) = source.default_level() {
+            self.default_level = Some(default_level);
         }
     }
 
@@ -288,6 +297,10 @@ impl Config {
     pub fn dependent_version(&self) -> DependentVersion {
         self.dependent_version.unwrap_or_default()
     }
+
+    pub fn default_level(&self) -> BumpLevel {
+        self.default_level.unwrap_or_default()
+    }
 }
 
 impl ConfigSource for Config {
@@ -369,6 +382,10 @@ impl ConfigSource for Config {
 
     fn dependent_version(&self) -> Option<DependentVersion> {
         self.dependent_version
+    }
+
+    fn default_level(&self) -> Option<BumpLevel> {
+        self.default_level
     }
 }
 

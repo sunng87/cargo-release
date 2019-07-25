@@ -198,6 +198,7 @@ fn release_package(
 ) -> Result<i32, error::FatalError> {
     let dry_run = args.dry_run;
     let sign = pkg.config.sign_commit();
+    let default_level = pkg.config.default_level();
     let cwd = pkg.package_path;
 
     // STEP 1: Query a bunch of information for later use.
@@ -212,11 +213,10 @@ fn release_package(
     replacements.insert("{{crate_name}}", crate_name.to_owned());
     replacements.insert("{{date}}", Local::now().format("%Y-%m-%d").to_string());
 
+    let level = args.level.unwrap_or_else(|| default_level);
+
     // STEP 2: update current version, save and commit
-    if args
-        .level
-        .bump_version(&mut version, args.metadata.as_ref())?
-    {
+    if level.bump_version(&mut version, args.metadata.as_ref())? {
         let new_version_string = version.to_string();
         replacements.insert("{{version}}", new_version_string.clone());
         // Release Confirmation
@@ -415,7 +415,7 @@ fn release_package(
     }
 
     // STEP 6: bump version
-    if !args.level.is_pre_release() && !pkg.config.no_dev_version() {
+    if !level.is_pre_release() && !pkg.config.no_dev_version() {
         version.increment_patch();
         version.pre.push(Identifier::AlphaNumeric(
             pkg.config.dev_version_ext().to_owned(),
@@ -472,14 +472,11 @@ struct ReleaseOpt {
     workspace: clap_cargo::Workspace,
 
     /// Release level: bumping specified version field or remove prerelease extensions by default
-    #[structopt(
-        raw(
-            possible_values = "&version::BumpLevel::variants()",
-            case_insensitive = "true"
-        ),
-        default_value = "release"
-    )]
-    level: version::BumpLevel,
+    #[structopt(raw(
+        possible_values = "&version::BumpLevel::variants()",
+        case_insensitive = "true"
+    ))]
+    level: Option<version::BumpLevel>,
 
     #[structopt(short = "m")]
     /// Semver metadata

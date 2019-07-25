@@ -1,4 +1,5 @@
 use semver::{Identifier, Version};
+use serde::{Deserialize, Serialize};
 
 use crate::error::FatalError;
 
@@ -7,7 +8,8 @@ static VERSION_BETA: &'static str = "beta";
 static VERSION_RC: &'static str = "rc";
 
 arg_enum! {
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+    #[serde(rename_all = "kebab-case")]
     pub enum BumpLevel {
         Major,
         Minor,
@@ -16,6 +18,12 @@ arg_enum! {
         Beta,
         Alpha,
         Release,
+    }
+}
+
+impl Default for BumpLevel {
+    fn default() -> Self {
+        BumpLevel::Release
     }
 }
 

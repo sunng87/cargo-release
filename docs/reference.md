@@ -57,6 +57,7 @@ Configuration is read from the following (in precedence order)
 | `pre-release-hook` | \-          | list of arguments | Provide a command to run before `cargo-release` commits version change. If the return code of hook command is greater than 0, the release process will be aborted. |
 | `enable-features` | `--features` | list of names | Provide a set of feature flags that should be passed to `cargo publish` (requires rust 1.33+) |
 | `all-features` | `--all-features` | bool  | Signal to `cargo publish`, that all features should be used (requires rust 1.33+) |
+| `default-level` | \- | string | Default bump level |
 
 ### Pre-release Replacements
 
