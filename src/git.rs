@@ -29,6 +29,7 @@ pub fn tag(
     name: &str,
     msg: &str,
     sign: bool,
+    edit: bool,
     dry_run: bool,
 ) -> Result<bool, FatalError> {
     call_on_path(
@@ -40,6 +41,7 @@ pub fn tag(
             "-m",
             msg,
             if sign { "-s" } else { "" },
+            if edit { "-e" } else { "" },
         ],
         dir,
         dry_run,
