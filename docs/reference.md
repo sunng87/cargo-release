@@ -51,6 +51,7 @@ Configuration is read from the following (in precedence order)
 | `tag-message`  | \-              | string | A message template for tag. The placeholder `{{tag_name}}` and ``{{prefix}}` (the tag prefix) is supported in addition to the global placeholders mentioned below. |
 | `tag-prefix`   | `--tag-prefix`  | string | Prefix of git tag, note that this will override default prefix based on crate name. |
 | `tag-name`     | `--tag-name`    | string | The name of the git tag.  The placeholder `{{prefix}}` (the tag prefix) is supported in addition to the global placeholders mentioned below. |
+| `tag-edit`     | `--tag-edit`    | bool | Edit git tag message interactively, see git tag [--edit](https://git-scm.com/docs/git-tag#Documentation/git-tag.txt---edit) option. |
 | `doc-commit-message` | \-        | string | A commit message template for doc import. |
 | `no-dev-version` | `--no-dev-version` |  bool | Disable version bump after release. |
 | `pre-release-replacements` | \-   | array of tables (see below) | Specify files that cargo-release will search and replace with new version |
