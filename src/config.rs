@@ -60,7 +60,9 @@ pub trait ConfigSource {
         None
     }
 
-    fn tag_edit(&self) -> Option<bool> { None }
+    fn tag_edit(&self) -> Option<bool> {
+        None
+    }
 
     fn tag_prefix(&self) -> Option<&str> {
         None
