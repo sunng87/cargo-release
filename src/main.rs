@@ -406,9 +406,9 @@ fn release_package(
 
     if !pkg.config.disable_tag() {
         let tag_message = replace_in(pkg.config.tag_message(), &replacements);
-
+        let edit = pkg.config.tag_edit();
         shell::log_info(&format!("Creating git tag {}", tag_name));
-        if !git::tag(cwd, &tag_name, &tag_message, sign, dry_run)? {
+        if !git::tag(cwd, &tag_name, &tag_message, sign, edit, dry_run)? {
             // tag failed, abort release
             return Ok(104);
         }
@@ -552,6 +552,10 @@ struct ConfigArgs {
     #[structopt(long = "tag-name")]
     /// The name of the git tag.
     tag_name: Option<String>,
+
+    #[structopt(long = "tag-edit")]
+    /// Edit git tag message
+    tag_edit: Option<bool>,
 
     #[structopt(long = "dev-version-ext")]
     /// Pre-release identifier(s) to append to the next development version after release

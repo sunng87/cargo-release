@@ -65,6 +65,10 @@ pub trait ConfigSource {
         None
     }
 
+    fn tag_edit(&self) -> Option<bool> {
+        None
+    }
+
     fn tag_prefix(&self) -> Option<&str> {
         None
     }
@@ -113,6 +117,7 @@ pub struct Config {
     pub pre_release_replacements: Option<Vec<Replace>>,
     pub pre_release_hook: Option<Command>,
     pub tag_message: Option<String>,
+    pub tag_edit: Option<bool>,
     pub tag_prefix: Option<String>,
     pub tag_name: Option<String>,
     pub doc_commit_message: Option<String>,
@@ -173,6 +178,9 @@ impl Config {
         }
         if let Some(tag_name) = source.tag_name() {
             self.tag_name = Some(tag_name.to_owned());
+        }
+        if let Some(tag_edit) = source.tag_edit() {
+            self.tag_edit = Some(tag_edit);
         }
         if let Some(doc_commit_message) = source.doc_commit_message() {
             self.doc_commit_message = Some(doc_commit_message.to_owned());
@@ -262,6 +270,10 @@ impl Config {
             .as_ref()
             .map(|s| s.as_str())
             .unwrap_or("(cargo-release) {{crate_name}} version {{version}}")
+    }
+
+    pub fn tag_edit(&self) -> bool {
+        self.tag_edit.unwrap_or(false)
     }
 
     pub fn tag_prefix(&self) -> Option<&str> {
@@ -360,6 +372,10 @@ impl ConfigSource for Config {
 
     fn tag_message(&self) -> Option<&str> {
         self.tag_message.as_ref().map(|s| s.as_str())
+    }
+
+    fn tag_edit(&self) -> Option<bool> {
+        self.tag_edit
     }
 
     fn tag_prefix(&self) -> Option<&str> {
