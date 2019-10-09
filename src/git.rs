@@ -84,6 +84,17 @@ pub fn push_tag(dir: &Path, remote: &str, tag: &str, dry_run: bool) -> Result<bo
     call_on_path(vec!["git", "push", remote, tag], dir, dry_run)
 }
 
+pub fn check_remote(dir: &Path, remote: &str) -> bool {
+    Command::new("git")
+        .arg("remote")
+        .arg("get-url")
+        .arg(remote)
+        .current_dir(dir)
+        .output()
+        .map(|r| r.status.success())
+        .unwrap_or(false)
+}
+
 pub fn top_level(dir: &Path) -> Result<PathBuf, FatalError> {
     let output = Command::new("git")
         .arg("rev-parse")

@@ -469,11 +469,18 @@ fn release_package(
     if !pkg.config.disable_push() {
         log::info!("Pushing to git remote");
         let git_remote = pkg.config.push_remote();
-        if !git::push(cwd, git_remote, dry_run)? {
-            return Ok(106);
-        }
-        if !pkg.config.disable_tag() && !git::push_tag(cwd, git_remote, &tag_name, dry_run)? {
-            return Ok(106);
+        if git::check_remote(cwd, git_remote) {
+            if !git::push(cwd, git_remote, dry_run)? {
+                return Ok(106);
+            }
+            if !pkg.config.disable_tag() && !git::push_tag(cwd, git_remote, &tag_name, dry_run)? {
+                return Ok(106);
+            }
+        } else {
+            log::info!(
+                "push_remote: {} is not configured for git, skip git push",
+                git_remote
+            );
         }
     }
 
