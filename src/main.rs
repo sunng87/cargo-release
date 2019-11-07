@@ -242,7 +242,7 @@ fn release_workspace(args: &ReleaseOpt) -> Result<i32, error::FatalError> {
     let ws_meta = args.manifest.metadata().exec().map_err(FatalError::from)?;
 
     git::git_version()?;
-    if git::is_dirty(&ws_meta.workspace_root)? {
+    if !args.allow_dirty && git::is_dirty(&ws_meta.workspace_root)? {
         log::warn!("Uncommitted changes detected, please commit before release.");
         if !args.dry_run {
             return Ok(101);
@@ -548,7 +548,7 @@ fn release_packages<'m>(
             log::info!("Running cargo publish on {}", crate_name);
             // feature list to release
             let features = &pkg.features;
-            if !cargo::publish(dry_run, &pkg.manifest_path, features)? {
+            if !cargo::publish(dry_run, args.allow_dirty, &pkg.manifest_path, features)? {
                 return Ok(103);
             }
         }
@@ -673,7 +673,7 @@ struct ReleaseOpt {
     custom_config: Option<String>,
 
     #[structopt(long)]
-    /// Ignore implicit configuration files.
+    /// Ignore implicit configuration files
     isolated: bool,
 
     #[structopt(flatten)]
@@ -684,11 +684,16 @@ struct ReleaseOpt {
     dry_run: bool,
 
     #[structopt(long)]
+    /// Allow dirty working directories to be published
+    allow_dirty: bool,
+
+
+    #[structopt(long)]
     /// Skip release confirmation and version preview
     no_confirm: bool,
 
     #[structopt(long)]
-    /// The name of tag for the previous release.
+    /// The name of tag for the previous release
     prev_tag_name: Option<String>,
 
     #[structopt(flatten)]

@@ -16,42 +16,30 @@ fn cargo() -> String {
 
 pub fn publish(
     dry_run: bool,
+    allow_dirty: bool,
     manifest_path: &Path,
     features: &Features,
 ) -> Result<bool, FatalError> {
     let cargo = cargo();
-    match features {
-        Features::None => call(
-            vec![
-                &cargo,
-                "publish",
-                "--manifest-path",
-                manifest_path.to_str().unwrap(),
-            ],
-            dry_run,
-        ),
-        Features::Selective(vec) => call(
-            vec![
-                &cargo,
-                "publish",
-                "--features",
-                &vec.join(" "),
-                "--manifest-path",
-                manifest_path.to_str().unwrap(),
-            ],
-            dry_run,
-        ),
-        Features::All => call(
-            vec![
-                &cargo,
-                "publish",
-                "--all-features",
-                "--manifest-path",
-                manifest_path.to_str().unwrap(),
-            ],
-            dry_run,
-        ),
+    let mut publish_call: Vec<&str> = vec![&cargo, "publish"];
+    if allow_dirty {
+        publish_call.push("--allow-dirty")
     }
+    let feature_vec;
+    match features {
+        Features::None => {}
+        Features::Selective(vec) => {
+            publish_call.push("--features");
+            feature_vec = vec.join(" ");
+            publish_call.push(&feature_vec);
+        }
+        Features::All => {
+            publish_call.push("--all-features");
+        }
+    }
+    publish_call.push("--manifest-path");
+    publish_call.push(manifest_path.to_str().unwrap());
+    call(publish_call, dry_run)
 }
 
 pub fn set_package_version(manifest_path: &Path, version: &str) -> Result<(), FatalError> {

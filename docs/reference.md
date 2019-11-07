@@ -5,11 +5,12 @@
 | Argument        | Format | Description |
 |-----------------|--------|-------------|
 | `--dry-run`     | bool   | Do nothing; report what would happen |
-| `--no-confirm`  | bool   | Release the crate without the user verifying what will happen. |
+| `--no-confirm`  | bool   | Release the crate without the user verifying what will happen |
 | `--isolated`    | bool   | Do not search for config files |
+| `--allow-dirty` | bool   | Allow dirty working directories to be published |
 | `--config`      | string | Load a config file from disk |
-| `<LEVEL>`       | string | Bump specified version field. |
-| `--metadata`    | string | Populate the metadata field in the version. |
+| `<LEVEL>`       | string | Bump specified version field |
+| `--metadata`    | string | Populate the metadata field in the version |
 
 ### Bump level
 

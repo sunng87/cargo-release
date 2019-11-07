@@ -6,7 +6,7 @@
 
 Performs release best-practices, including:
 
-* Ensure the git working directory is clean.
+* Ensure the git working directory is clean (except if the `--allow-dirty` flag is set).
 * Bump the version in Cargo.toml
 * Run `cargo publish` ([if not disabled](https://doc.rust-lang.org/cargo/reference/manifest.html#the-publish--field-optional))
 * Create a git tag for this version
