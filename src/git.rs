@@ -7,7 +7,7 @@ use bstr::ByteSlice;
 use crate::cmd::call_on_path;
 use crate::error::FatalError;
 
-pub fn is_dirty(dir: &Path, ignore_untracked: bool) -> Result<bool, FatalError> {
+pub fn is_dirty(dir: &Path) -> Result<bool, FatalError> {
     log::debug!("Checking if path {:?} is dirty", dir);
     let output = Command::new("git")
         .arg("diff")
@@ -19,26 +19,20 @@ pub fn is_dirty(dir: &Path, ignore_untracked: bool) -> Result<bool, FatalError> 
         .map_err(FatalError::from)?;
     let tracked_unclean = !output.status.success();
 
-    log::trace!("Unclean={}", tracked_unclean);
+    log::info!("Unclean={}", tracked_unclean);
 
-    let untracked = if ignore_untracked {
-        false
-    } else {
-        let output = Command::new("git")
-            .arg("ls-files")
-            .arg("--exclude-standard")
-            .arg("--others")
-            .current_dir(dir)
-            .output()
-            .map_err(FatalError::from)?;
-        let untracked_files = String::from_utf8_lossy(&output.stdout);
-        let untracked = !untracked_files.as_ref().trim().is_empty();
+    let output = Command::new("git")
+        .arg("ls-files")
+        .arg("--exclude-standard")
+        .arg("--others")
+        .current_dir(dir)
+        .output()
+        .map_err(FatalError::from)?;
+    let untracked_files = String::from_utf8_lossy(&output.stdout);
+    let untracked = !untracked_files.as_ref().trim().is_empty();
 
-        log::trace!("Untracked Files={}", untracked_files);
-        log::trace!("Untracked={}", untracked);
-
-        untracked
-    };
+    log::info!("Untracked Files={}", untracked_files);
+    log::info!("Untracked={}", untracked);
 
     Ok(tracked_unclean || untracked)
 }

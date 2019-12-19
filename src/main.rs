@@ -317,9 +317,12 @@ fn release_workspace(args: &ReleaseOpt) -> Result<i32, error::FatalError> {
     };
 
     git::git_version()?;
-    if git::is_dirty(&ws_meta.workspace_root, args.config.ignore_untracked)? {
-        log::warn!("Uncommitted changes detected, please commit before release.");
-        if !args.dry_run {
+    if git::is_dirty(&ws_meta.workspace_root)? {
+        if !args.config.allow_dirty {
+            log::warn!("Uncommitted changes detected, please commit before release.");
+        }
+        let allow_dirty = args.dry_run || args.config.allow_dirty;
+        if !allow_dirty {
             return Ok(101);
         }
     }
@@ -921,8 +924,8 @@ struct ConfigArgs {
     no_dev_version: bool,
 
     #[structopt(long)]
-    /// Ignore untracked files when determining whether working directory is dirty
-    ignore_untracked: bool,
+    /// Allow a dirty working directory
+    allow_dirty: bool,
 
     #[structopt(long)]
     /// Provide a set of features that need to be enabled
