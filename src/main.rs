@@ -318,8 +318,11 @@ fn release_workspace(args: &ReleaseOpt) -> Result<i32, error::FatalError> {
 
     git::git_version()?;
     if git::is_dirty(&ws_meta.workspace_root)? {
-        log::warn!("Uncommitted changes detected, please commit before release.");
-        if !args.dry_run {
+        if !args.config.allow_dirty {
+            log::warn!("Uncommitted changes detected, please commit before release.");
+        }
+        let allow_dirty = args.dry_run || args.config.allow_dirty;
+        if !allow_dirty {
             return Ok(101);
         }
     }
@@ -677,7 +680,7 @@ fn release_packages<'m>(
             log::info!("Running cargo publish on {}", crate_name);
             // feature list to release
             let features = &pkg.features;
-            if !cargo::publish(dry_run, &pkg.manifest_path, features)? {
+            if !cargo::publish(dry_run, args.config.allow_dirty, &pkg.manifest_path, features)? {
                 return Ok(103);
             }
             let timeout = std::time::Duration::from_secs(30);
@@ -919,6 +922,10 @@ struct ConfigArgs {
     #[structopt(long)]
     /// Do not create dev version after release
     no_dev_version: bool,
+
+    #[structopt(long)]
+    /// Allow a dirty working directory
+    allow_dirty: bool,
 
     #[structopt(long)]
     /// Provide a set of features that need to be enabled

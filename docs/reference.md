@@ -60,6 +60,7 @@ Configuration is read from the following (in precedence order)
 | `no-dev-version` | `--no-dev-version` |  bool | Disable version bump after release. |
 | `pre-release-replacements` | \-   | array of tables (see below) | Specify files that cargo-release will search and replace with new version |
 | `pre-release-hook` | \-          | list of arguments | Provide a command to run before `cargo-release` commits version change. If the return code of hook command is greater than 0, the release process will be aborted. |
+| `allow-dirty` | `--allow-dirty` | bool | Allow a dirty working directory when releasing. 
 | `enable-features` | `--features` | list of names | Provide a set of feature flags that should be passed to `cargo publish` (requires rust 1.33+) |
 | `all-features` | `--all-features` | bool  | Signal to `cargo publish`, that all features should be used (requires rust 1.33+) |
 
