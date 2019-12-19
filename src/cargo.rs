@@ -16,41 +16,60 @@ fn cargo() -> String {
 
 pub fn publish(
     dry_run: bool,
+    allow_dirty: bool,
     manifest_path: &Path,
     features: &Features,
 ) -> Result<bool, FatalError> {
     let cargo = cargo();
+    let allow_dirty = if allow_dirty {
+        vec!["--allow-dirty"]
+    } else {
+        vec![]
+    };
     match features {
-        Features::None => call(
-            vec![
-                &cargo,
+        Features::None => {
+            let mut args = vec![
+                cargo.as_str(),
                 "publish",
                 "--manifest-path",
                 manifest_path.to_str().unwrap(),
-            ],
-            dry_run,
-        ),
-        Features::Selective(vec) => call(
-            vec![
-                &cargo,
+            ];
+            args.extend(allow_dirty);
+            call(
+                args,
+                dry_run,
+            )
+        },
+        Features::Selective(vec) => {
+            let features = vec.join(" ");
+            let mut args = vec![
+                cargo.as_str(),
                 "publish",
                 "--features",
-                &vec.join(" "),
+                features.as_str(),
                 "--manifest-path",
                 manifest_path.to_str().unwrap(),
-            ],
-            dry_run,
-        ),
-        Features::All => call(
-            vec![
-                &cargo,
+            ];
+            args.extend(allow_dirty);
+            call(
+                args,
+                dry_run,
+            )
+        },
+        Features::All => {
+            let mut args = vec![
+                cargo.as_str(),
                 "publish",
                 "--all-features",
                 "--manifest-path",
                 manifest_path.to_str().unwrap(),
-            ],
-            dry_run,
-        ),
+            ];
+            args.extend(allow_dirty);
+            call(
+                args,
+                dry_run,
+            )
+        },
     }
 }
 
