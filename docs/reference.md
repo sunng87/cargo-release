@@ -20,9 +20,11 @@
   * Otherwise, bump the patch field (0.1.0 -> 0.1.1)
 * `minor`: Bump minor version (0.1.0-pre -> 0.2.0)
 * `major`: Bump major version (0.1.0-pre -> 1.0.0)
-* `alpha`, `beta`, and `rc`: Add/increment pre-release to your version
+* `alpha`, `beta`, and `rc`: Increment pre-release to your version, or add pre-release **and** bump the patch field  
   (1.0.0 -> 1.0.1-rc.1, 1.0.1-dev -> 1.0.1-rc.1, 1.0.1-rc.1 ->
   1.0.1-rc.2)
+* `alphaMinor`: Increment alpha pre-release to your version, or add alpha pre-release **and** bump the minor field
+* `alphaMajor`: Increment alpha pre-release to your version, or add alpha pre-release **and** bump the major field
 * *[version]*: bump version to given version. The version has to
   be a valid semver string and greater than current version as in
   semver spec.
