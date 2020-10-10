@@ -15,6 +15,8 @@ arg_enum! {
         Rc,
         Beta,
         Alpha,
+        AlphaMinor,
+        AlphaMajor,
         Release,
     }
 }
@@ -22,7 +24,7 @@ arg_enum! {
 impl BumpLevel {
     pub fn is_pre_release(self) -> bool {
         match self {
-            BumpLevel::Alpha | BumpLevel::Beta | BumpLevel::Rc => true,
+            BumpLevel::Alpha | BumpLevel::AlphaMinor | BumpLevel::AlphaMajor | BumpLevel::Beta | BumpLevel::Rc => true,
             _ => false,
         }
     }
@@ -62,6 +64,14 @@ impl BumpLevel {
                 version.increment_alpha()?;
                 need_commit = true;
             }
+            BumpLevel::AlphaMinor => {
+                version.increment_alpha_minor()?;
+                need_commit = true;
+            }
+            BumpLevel::AlphaMajor => {
+                version.increment_alpha_major()?;
+                need_commit = true;
+            }
             BumpLevel::Release => {
                 if version.is_prerelease() {
                     version.pre.clear();
@@ -80,6 +90,8 @@ impl BumpLevel {
 
 trait VersionExt {
     fn increment_alpha(&mut self) -> Result<(), FatalError>;
+    fn increment_alpha_minor(&mut self) -> Result<(), FatalError>;
+    fn increment_alpha_major(&mut self) -> Result<(), FatalError>;
     fn increment_beta(&mut self) -> Result<(), FatalError>;
     fn increment_rc(&mut self) -> Result<(), FatalError>;
     fn prerelease_id_version(&self) -> Result<Option<(String, Option<u64>)>, FatalError>;
@@ -112,22 +124,35 @@ impl VersionExt for Version {
 
     fn increment_alpha(&mut self) -> Result<(), FatalError> {
         if let Some((pre_ext, pre_ext_ver)) = self.prerelease_id_version()? {
-            if pre_ext == VERSION_BETA || pre_ext == VERSION_RC {
-                Err(FatalError::InvalidReleaseLevel(VERSION_ALPHA.to_owned()))
-            } else {
-                let new_ext_ver = if pre_ext == VERSION_ALPHA {
-                    pre_ext_ver.unwrap_or(0) + 1
-                } else {
-                    1
-                };
-                self.pre = vec![
-                    Identifier::AlphaNumeric(VERSION_ALPHA.to_owned()),
-                    Identifier::Numeric(new_ext_ver),
-                ];
-                Ok(())
-            }
+            increment_alpha_inner(self, pre_ext, pre_ext_ver)
         } else {
             self.increment_patch();
+            self.pre = vec![
+                Identifier::AlphaNumeric(VERSION_ALPHA.to_owned()),
+                Identifier::Numeric(1),
+            ];
+            Ok(())
+        }
+    }
+
+    fn increment_alpha_minor(&mut self) -> Result<(), FatalError> {
+        if let Some((pre_ext, pre_ext_ver)) = self.prerelease_id_version()? {
+            increment_alpha_inner(self, pre_ext, pre_ext_ver)
+        } else {
+            self.increment_minor();
+            self.pre = vec![
+                Identifier::AlphaNumeric(VERSION_ALPHA.to_owned()),
+                Identifier::Numeric(1),
+            ];
+            Ok(())
+        }
+    }
+
+    fn increment_alpha_major(&mut self) -> Result<(), FatalError> {
+        if let Some((pre_ext, pre_ext_ver)) = self.prerelease_id_version()? {
+            increment_alpha_inner(self, pre_ext, pre_ext_ver)
+        } else {
+            self.increment_major();
             self.pre = vec![
                 Identifier::AlphaNumeric(VERSION_ALPHA.to_owned()),
                 Identifier::Numeric(1),
@@ -224,6 +249,23 @@ pub fn set_requirement(
         } else {
             Ok(Some(new_req_text))
         }
+    }
+}
+
+fn increment_alpha_inner(version: &mut Version, pre_ext: String, pre_ext_ver: Option<u64>) -> Result<(), FatalError> {
+    if pre_ext == VERSION_BETA || pre_ext == VERSION_RC {
+        Err(FatalError::InvalidReleaseLevel(VERSION_ALPHA.to_owned()))
+    } else {
+        let new_ext_ver = if pre_ext == VERSION_ALPHA {
+            pre_ext_ver.unwrap_or(0) + 1
+        } else {
+            1
+        };
+        version.pre = vec![
+            Identifier::AlphaNumeric(VERSION_ALPHA.to_owned()),
+            Identifier::Numeric(new_ext_ver),
+        ];
+        Ok(())
     }
 }
 
@@ -406,6 +448,48 @@ mod test {
 
             let mut v5 = Version::parse("1.0.1-1").unwrap();
             assert!(v5.increment_alpha().is_err());
+        }
+
+        #[test]
+        fn alpha_minor() {
+            let mut v = Version::parse("1.0.0").unwrap();
+            let _ = v.increment_alpha_minor();
+            assert_eq!(v, Version::parse("1.1.0-alpha.1").unwrap());
+
+            let mut v2 = Version::parse("1.1.0-dev").unwrap();
+            let _ = v2.increment_alpha_minor();
+            assert_eq!(v2, Version::parse("1.1.0-alpha.1").unwrap());
+
+            let mut v3 = Version::parse("1.1.0-alpha.1").unwrap();
+            let _ = v3.increment_alpha_minor();
+            assert_eq!(v3, Version::parse("1.1.0-alpha.2").unwrap());
+
+            let mut v4 = Version::parse("1.1.0-beta.1").unwrap();
+            assert!(v4.increment_alpha_minor().is_err());
+
+            let mut v5 = Version::parse("1.1.0-1").unwrap();
+            assert!(v5.increment_alpha_minor().is_err());
+        }
+
+        #[test]
+        fn alpha_major() {
+            let mut v = Version::parse("1.0.0").unwrap();
+            let _ = v.increment_alpha_major();
+            assert_eq!(v, Version::parse("2.0.0-alpha.1").unwrap());
+
+            let mut v2 = Version::parse("2.0.0-dev").unwrap();
+            let _ = v2.increment_alpha_major();
+            assert_eq!(v2, Version::parse("2.0.0-alpha.1").unwrap());
+
+            let mut v3 = Version::parse("2.0.0-alpha.1").unwrap();
+            let _ = v3.increment_alpha_major();
+            assert_eq!(v3, Version::parse("2.0.0-alpha.2").unwrap());
+
+            let mut v4 = Version::parse("2.0.0-beta.1").unwrap();
+            assert!(v4.increment_alpha_major().is_err());
+
+            let mut v5 = Version::parse("2.0.0-1").unwrap();
+            assert!(v5.increment_alpha_major().is_err());
         }
 
         #[test]

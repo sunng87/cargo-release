@@ -851,7 +851,7 @@ struct ReleaseOpt {
     #[structopt(flatten)]
     workspace: clap_cargo::Workspace,
 
-    /// Release level or version: bumping specified version field or remove prerelease extensions by default. Possible level value: major, minor, patch, release, rc, beta, alpha or any valid semver version that is greater than current version
+    /// Release level or version: bumping specified version field or remove prerelease extensions by default. Possible level value: major, minor, patch, release, rc, beta, alphaMajor, alphaMinor, alpha or any valid semver version that is greater than current version
     #[structopt(case_insensitive(true), default_value = "release")]
     level_or_version: String,
 
