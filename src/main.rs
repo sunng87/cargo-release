@@ -904,7 +904,7 @@ impl Verbosity {
     /// Get the log level.
     pub fn log_level(&self, dry_run: bool) -> log::Level {
         let default_level = if dry_run {
-            3 // DEBUG if dry_run
+            4 // DEBUG if dry_run
         } else {
             2 // INFO
         };
