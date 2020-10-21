@@ -902,8 +902,13 @@ pub struct Verbosity {
 
 impl Verbosity {
     /// Get the log level.
-    pub fn log_level(&self) -> log::Level {
-        let verbosity = 2 - self.quiet + self.verbose;
+    pub fn log_level(&self, dry_run: bool) -> log::Level {
+        let default_level = if dry_run {
+            3 // DEBUG if dry_run
+        } else {
+            2 // INFO
+        };
+        let verbosity = default_level - self.quiet + self.verbose;
 
         match verbosity {
             std::i8::MIN..=0 => log::Level::Error,
@@ -1078,7 +1083,7 @@ pub fn get_logging(level: log::Level) -> env_logger::Builder {
 fn main() {
     let Command::Release(ref release_matches) = Command::from_args();
 
-    let mut builder = get_logging(release_matches.logging.log_level());
+    let mut builder = get_logging(release_matches.logging.log_level(release_matches.dry_run));
     builder.init();
 
     match release_workspace(release_matches) {
