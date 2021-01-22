@@ -58,7 +58,7 @@ section (recommended by [Keep a Changelog](http://keepachangelog.com/en/1.0.0/))
 [1.0.0]: https://github.com/assert-rs/predicates-rs/compare/v0.9.0...v1.0.0
 ```
 
-In `Cargo.toml`, configure `cargo release` to do replacements while
+In `release.toml`, configure `cargo release` to do replacements while
 bumping version:
 
 ```toml
