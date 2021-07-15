@@ -683,6 +683,13 @@ fn release_packages<'m>(
         let shared_commit_msg = {
             let template = Template {
                 date: Some(NOW.as_str()),
+                version: pkgs
+                    .iter()
+                    .map(|p| p.version.as_ref().map(|v| v.version_string.as_str()))
+                    .fold(
+                        pkgs[0].version.as_ref().map(|v| v.version_string.as_str()),
+                        |acc, v| if acc == v { acc } else { None },
+                    ),
                 ..Default::default()
             };
             template.render(ws_config.pre_release_commit_message())
