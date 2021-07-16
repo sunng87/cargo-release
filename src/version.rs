@@ -21,14 +21,10 @@ arg_enum! {
 }
 
 impl BumpLevel {
-    pub fn is_pre_release(self) -> bool {
-        matches!(self, BumpLevel::Alpha | BumpLevel::Beta | BumpLevel::Rc)
-    }
-
     pub fn bump_version(
         self,
         version: &mut Version,
-        metadata: Option<&String>,
+        metadata: Option<&str>,
     ) -> Result<bool, FatalError> {
         let mut need_commit = false;
         match self {

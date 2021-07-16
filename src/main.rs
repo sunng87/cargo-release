@@ -4,7 +4,6 @@ use std::ffi::OsStr;
 use std::io::Write;
 use std::path::Path;
 use std::process::exit;
-use std::str::FromStr;
 
 use boolinator::Boolinator;
 use chrono::prelude::Local;
@@ -90,6 +89,12 @@ struct PackageRelease<'m> {
 struct Version {
     version: semver::Version,
     version_string: String,
+}
+
+impl Version {
+    fn is_prerelease(&self) -> bool {
+        self.version.is_prerelease()
+    }
 }
 
 struct Dependency<'m> {
@@ -178,41 +183,13 @@ impl<'m> PackageRelease<'m> {
             template.render(config.tag_name())
         };
 
-        let mut is_pre_release = false;
-        let version = {
-            let mut potential_version = prev_version.version.clone();
-            if let Ok(bump_level) = version::BumpLevel::from_str(&args.level_or_version) {
-                // bump level
-                if bump_level.bump_version(&mut potential_version, args.metadata.as_ref())? {
-                    let version = potential_version;
-                    let version_string = version.to_string();
-                    is_pre_release = bump_level.is_pre_release();
-                    Some(Version {
-                        version,
-                        version_string,
-                    })
-                } else {
-                    None
-                }
-            } else {
-                // given version
-                match semver::Version::parse(&args.level_or_version)? {
-                    version if version > potential_version => {
-                        is_pre_release = version.is_prerelease();
-                        Some(Version {
-                            version,
-                            version_string: args.level_or_version.to_owned(),
-                        })
-                    }
-                    version if version == potential_version => None,
-                    _ => {
-                        return Err(error::FatalError::UnsupportedVersionReq(
-                            "Cannot release version smaller than current one".to_owned(),
-                        ));
-                    }
-                }
-            }
-        };
+        let version = args
+            .level_or_version
+            .bump(&prev_version.version, args.metadata.as_deref())?;
+        let is_pre_release = version
+            .as_ref()
+            .map(Version::is_prerelease)
+            .unwrap_or(false);
         let dependents = if version.is_some() {
             find_dependents(ws_meta, pkg_meta)
                 .map(|(pkg, dep)| Dependency { pkg, req: &dep.req })
@@ -900,8 +877,8 @@ struct ReleaseOpt {
     workspace: clap_cargo::Workspace,
 
     /// Release level or version: bumping specified version field or remove prerelease extensions by default. Possible level value: major, minor, patch, release, rc, beta, alpha or any valid semver version that is greater than current version
-    #[structopt(case_insensitive(true), default_value = "release")]
-    level_or_version: String,
+    #[structopt(default_value)]
+    level_or_version: TargetVersion,
 
     #[structopt(short = "m")]
     /// Semver metadata
@@ -1115,6 +1092,81 @@ enum Command {
         setting = structopt::clap::AppSettings::DontCollapseArgsInUsage
     )]
     Release(ReleaseOpt),
+}
+
+#[derive(Clone, Debug)]
+enum TargetVersion {
+    Relative(version::BumpLevel),
+    Absolute(semver::Version),
+}
+
+impl TargetVersion {
+    fn bump(
+        &self,
+        current: &semver::Version,
+        metadata: Option<&str>,
+    ) -> Result<Option<Version>, FatalError> {
+        match self {
+            TargetVersion::Relative(bump_level) => {
+                let mut potential_version = current.to_owned();
+                if bump_level.bump_version(&mut potential_version, metadata)? {
+                    let version = potential_version;
+                    let version_string = version.to_string();
+                    Ok(Some(Version {
+                        version,
+                        version_string,
+                    }))
+                } else {
+                    Ok(None)
+                }
+            }
+            TargetVersion::Absolute(version) => {
+                if current < version {
+                    Ok(Some(Version {
+                        version: version.to_owned(),
+                        version_string: version.to_string(),
+                    }))
+                } else if current == version {
+                    Ok(None)
+                } else {
+                    return Err(error::FatalError::UnsupportedVersionReq(
+                        "Cannot release version smaller than current one".to_owned(),
+                    ));
+                }
+            }
+        }
+    }
+}
+
+impl Default for TargetVersion {
+    fn default() -> Self {
+        TargetVersion::Relative(version::BumpLevel::Release)
+    }
+}
+
+impl std::fmt::Display for TargetVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            TargetVersion::Relative(bump_level) => {
+                write!(f, "{}", bump_level)
+            }
+            TargetVersion::Absolute(version) => {
+                write!(f, "{}", version)
+            }
+        }
+    }
+}
+
+impl std::str::FromStr for TargetVersion {
+    type Err = FatalError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Ok(bump_level) = version::BumpLevel::from_str(s) {
+            Ok(TargetVersion::Relative(bump_level))
+        } else {
+            Ok(TargetVersion::Absolute(semver::Version::parse(s)?))
+        }
+    }
 }
 
 pub fn get_logging(level: log::Level) -> env_logger::Builder {
